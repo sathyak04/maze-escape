@@ -4,19 +4,18 @@ import heapq
 import asyncio  # Import the asyncio library
 
 # --- Pygame Setup ---
-# Constants are defined outside the main function
 SCREEN_WIDTH, SCREEN_HEIGHT = 630, 630
 CELL_SIZE = 30
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 GREEN = (0, 255, 0)
 RED = (255, 0, 0)
+BLUE = (0, 0, 255)
 YELLOW = (255, 255, 0)
 WIDTH, HEIGHT = 21, 21
 DIRS = [(-2, 0), (2, 0), (0, -2), (0, 2)]
 
 # --- Maze Logic ---
-# Maze is now a global variable to be accessed by functions
 maze = [["#" for _ in range(WIDTH)] for _ in range(HEIGHT)]
 
 def generate_maze(x, y):
@@ -76,42 +75,66 @@ def draw_maze(surface, solved_path):
                 rect = pygame.Rect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE)
                 pygame.draw.rect(surface, YELLOW, rect)
 
-# Create an async main function that pygbag can run
+# --- Player Sprite ---
+class Player(pygame.sprite.Sprite):
+    def __init__(self, row, col):
+        super().__init__()
+        self.image = pygame.Surface((CELL_SIZE - 4, CELL_SIZE - 4))
+        self.image.fill(BLUE)
+        self.rect = self.image.get_rect()
+        self.row, self.col = row, col
+        self.update_position()
+
+    def update_position(self):
+        self.rect.topleft = (self.col * CELL_SIZE + 2, self.row * CELL_SIZE + 2)
+
+    def move(self, dr, dc):
+        new_row, new_col = self.row + dr, self.col + dc
+        if 0 <= new_row < HEIGHT and 0 <= new_col < WIDTH:
+            if maze[new_row][new_col] != "#":  # not a wall
+                self.row, self.col = new_row, new_col
+                self.update_position()
+
+# --- Async Main Loop ---
 async def main():
-    print("Initializing Pygame...")
     pygame.init()
-    
-    print("Setting up Pygame screen...")
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     pygame.display.set_caption("Maze Escape")
 
-    # --- Maze Generation and Solving ---
-    print("Generating Maze...")
+    # Maze generation
     generate_maze(1, 1)
     maze[1][1] = "S"
     maze[HEIGHT - 2][WIDTH - 2] = "E"
-    
-    print("Solving Maze with A*...")
+
+    # Solve for path (optional visualization)
     start_pos = (1, 1)
     end_pos = (HEIGHT - 2, WIDTH - 2)
     maze_for_solver = [row[:] for row in maze]
     a_star_path = a_star_solver(maze_for_solver, start_pos, end_pos)
 
-    print("Starting main game loop...")
-    # The main loop is now 'while True'
+    # Create player
+    player = Player(1, 1)
+
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
-                return  # Exit the function to stop the game
+                return
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_UP:
+                    player.move(-1, 0)
+                elif event.key == pygame.K_DOWN:
+                    player.move(1, 0)
+                elif event.key == pygame.K_LEFT:
+                    player.move(0, -1)
+                elif event.key == pygame.K_RIGHT:
+                    player.move(0, 1)
 
         screen.fill(BLACK)
         draw_maze(screen, a_star_path)
+        screen.blit(player.image, player.rect)
         pygame.display.flip()
-
-        # This is the crucial line: it gives control back to the browser
         await asyncio.sleep(0)
 
-# This is the entry point for the script
 if __name__ == "__main__":
     asyncio.run(main())
