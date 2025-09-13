@@ -1,44 +1,43 @@
 import pygame
 import random
 import heapq
+import asyncio  # Import the asyncio library
 
-# --- Your Maze Generation and Solving Logic (Untouched) ---
-
-# Maze dimensions (odd numbers)
+# --- Pygame Setup ---
+# Constants are defined outside the main function
+SCREEN_WIDTH, SCREEN_HEIGHT = 630, 630
+CELL_SIZE = 30
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+GREEN = (0, 255, 0)
+RED = (255, 0, 0)
+YELLOW = (255, 255, 0)
 WIDTH, HEIGHT = 21, 21
-
-# Initialize maze full of walls
-maze = [["#" for _ in range(WIDTH)] for _ in range(HEIGHT)]
-
-# Directions (dx, dy)
 DIRS = [(-2, 0), (2, 0), (0, -2), (0, 2)]
 
-# Recursive DFS Maze Generator
+# --- Maze Logic ---
+# Maze is now a global variable to be accessed by functions
+maze = [["#" for _ in range(WIDTH)] for _ in range(HEIGHT)]
+
 def generate_maze(x, y):
-    maze[y][x] = " "  # mark passage
+    maze[y][x] = " "
     directions = DIRS[:]
     random.shuffle(directions)
-
     for dx, dy in directions:
         nx, ny = x + dx, y + dy
-        if 0 < nx < WIDTH-1 and 0 < ny < HEIGHT-1:
-            if maze[ny][nx] == "#":  # unvisited
-                maze[y + dy//2][x + dx//2] = " "  # carve wall
-                generate_maze(nx, ny)
+        if 0 < nx < WIDTH - 1 and 0 < ny < HEIGHT - 1 and maze[ny][nx] == "#":
+            maze[y + dy // 2][x + dx // 2] = " "
+            generate_maze(nx, ny)
 
-# A* Solver
-def a_star_solver(maze_data, start, end):
+def a_star_solver(maze_layout, start, end):
     def heuristic(a, b):
         return abs(a[0] - b[0]) + abs(a[1] - b[1])
-
     open_set = []
-    heapq.heappush(open_set, (0 + heuristic(start, end), 0, start))
+    heapq.heappush(open_set, (heuristic(start, end), 0, start))
     came_from = {}
     g_score = {start: 0}
-
     while open_set:
         _, g_current, current = heapq.heappop(open_set)
-
         if current == end:
             path = []
             while current in came_from:
@@ -47,11 +46,10 @@ def a_star_solver(maze_data, start, end):
             path.append(start)
             path.reverse()
             return path
-
-        for dr, dc in [(-1,0), (1,0), (0,-1), (0,1)]:
+        for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
             nr, nc = current[0] + dr, current[1] + dc
             neighbor = (nr, nc)
-            if 0 <= nr < HEIGHT and 0 <= nc < WIDTH and maze_data[nr][nc] != '#':
+            if 0 <= nr < HEIGHT and 0 <= nc < WIDTH and maze_layout[nr][nc] != '#':
                 tentative_g = g_current + 1
                 if neighbor not in g_score or tentative_g < g_score[neighbor]:
                     g_score[neighbor] = tentative_g
@@ -60,77 +58,60 @@ def a_star_solver(maze_data, start, end):
                     came_from[neighbor] = current
     return None
 
-# --- New Pygame Visualization Code ---
-
-# Constants for drawing
-CELL_SIZE = 30
-SCREEN_WIDTH = WIDTH * CELL_SIZE
-SCREEN_HEIGHT = HEIGHT * CELL_SIZE
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
-GREEN = (0, 255, 0)
-RED = (255, 0, 0)
-BLUE = (0, 0, 255)
-YELLOW = (255, 255, 0)
-
-def draw_maze(screen, maze_data, path):
-    """Draws the maze and the path onto the screen."""
-    screen.fill(BLACK)
-    for y, row in enumerate(maze_data):
-        for x, char in enumerate(row):
-            rect = pygame.Rect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE)
-            color = BLACK
-            if char == ' ':
-                color = WHITE
-            elif char == 'S':
+def draw_maze(surface, solved_path):
+    for r, row in enumerate(maze):
+        for c, cell in enumerate(row):
+            rect = pygame.Rect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE)
+            color = WHITE
+            if cell == "#":
+                color = BLACK
+            elif cell == "S":
                 color = GREEN
-            elif char == 'E':
+            elif cell == "E":
                 color = RED
-            
-            pygame.draw.rect(screen, color, rect)
-
-    # Draw the solved path on top
-    if path:
-        for r, c in path:
-             if maze_data[r][c] not in ('S', 'E'):
+            pygame.draw.rect(surface, color, rect)
+    if solved_path:
+        for r, c in solved_path:
+            if maze[r][c] not in ["S", "E"]:
                 rect = pygame.Rect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE)
-                pygame.draw.rect(screen, YELLOW, rect)
+                pygame.draw.rect(surface, YELLOW, rect)
 
-
-def main():
-    """Main function to run the Pygame app."""
-    # --- Generate and Solve the Maze First ---
-    generate_maze(1, 1)
-
-    # Mark start and end points
-    start_pos = (1, 1)
-    end_pos = (HEIGHT-2, WIDTH-2)
-    maze[start_pos[0]][start_pos[1]] = "S"
-    maze[end_pos[0]][end_pos[1]] = "E"
-    
-    # Solve the maze
-    solved_path = a_star_solver(maze, start_pos, end_pos)
-
-    # --- Initialize Pygame and Create Window ---
+# Create an async main function that pygbag can run
+async def main():
+    print("Initializing Pygame...")
     pygame.init()
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-    pygame.display.set_caption("Maze Generator and A* Solver")
     
-    running = True
-    while running:
+    print("Setting up Pygame screen...")
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    pygame.display.set_caption("Maze Escape")
+
+    # --- Maze Generation and Solving ---
+    print("Generating Maze...")
+    generate_maze(1, 1)
+    maze[1][1] = "S"
+    maze[HEIGHT - 2][WIDTH - 2] = "E"
+    
+    print("Solving Maze with A*...")
+    start_pos = (1, 1)
+    end_pos = (HEIGHT - 2, WIDTH - 2)
+    maze_for_solver = [row[:] for row in maze]
+    a_star_path = a_star_solver(maze_for_solver, start_pos, end_pos)
+
+    print("Starting main game loop...")
+    # The main loop is now 'while True'
+    while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                running = False
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    running = False
+                pygame.quit()
+                return  # Exit the function to stop the game
 
-        # --- Drawing ---
-        draw_maze(screen, maze, solved_path)
+        screen.fill(BLACK)
+        draw_maze(screen, a_star_path)
         pygame.display.flip()
 
-    pygame.quit()
+        # This is the crucial line: it gives control back to the browser
+        await asyncio.sleep(0)
 
-# Run the main function when the script is executed
+# This is the entry point for the script
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
