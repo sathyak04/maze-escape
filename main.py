@@ -234,7 +234,7 @@ def reset_game():
 async def main():
     global score
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-    pygame.display.set_caption("Maze Escape")
+    pygame.display.set_caption("The MushROOMS")
 
     reset_button = pygame.Rect(100, SCREEN_HEIGHT - 55, 180, 30)
     solution_button = pygame.Rect(330, SCREEN_HEIGHT - 55, 180, 30)
