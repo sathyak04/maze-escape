@@ -30,4 +30,4 @@ The game combines **classic maze-solving** with **interactive visuals, sounds, a
 
 ## 📸 Demo
 
-![maze-escape-demo](https://user-images.githubusercontent.com/your-demo-gif-or-screenshot-link)
+![screen-capture3-ezgif com-video-to-gif-converter](https://github.com/user-attachments/assets/4c35ff41-f9b6-4aff-9fbf-87692c6d37ff)
