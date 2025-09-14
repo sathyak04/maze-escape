@@ -13,6 +13,7 @@ BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 GREEN = (0, 255, 0)
 YELLOW = (255, 255, 0)
+RED = (255, 0, 0)
 WIDTH, HEIGHT = 21, 21
 DIRS = [(-2, 0), (2, 0), (0, -2), (0, 2)]
 
@@ -154,13 +155,15 @@ def draw_title(surface):
     part1 = TITLE_FONT.render("THE MUSH", True, WHITE)
     part2 = TITLE_FONT.render("ROOMS", True, (255, 0, 0))  # red
     y_pos = SCREEN_HEIGHT - 100
-    surface.blit(part1, (150, y_pos))
-    surface.blit(part2, (150 + part1.get_width(), y_pos))
+    surface.blit(part1, (50, y_pos))
+    surface.blit(part2, (50 + part1.get_width(), y_pos))
 
 def draw_score(surface):
     y_pos = SCREEN_HEIGHT - 100
-    score_text = SCORE_FONT.render(f"SCORE: {score}", True, WHITE)
-    surface.blit(score_text, (SCREEN_WIDTH - score_text.get_width() - 165, y_pos + 5))
+    score_text = SCORE_FONT.render(f"SCORE: {score}", True, RED)
+    surface.blit(score_text, (SCREEN_WIDTH - score_text.get_width() - 100, y_pos - 610))
+    instruction_text = SCORE_FONT.render("USE ARROW OR WASD KEYS TO MOVE", True, WHITE)
+    surface.blit(instruction_text, (score_text.get_rect().right + 215, y_pos + 5))
 
 # --- Player ---
 class Player(pygame.sprite.Sprite):
