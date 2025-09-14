@@ -5,6 +5,7 @@ import asyncio
 import time
 
 # --- Pygame Setup ---
+pygame.mixer.pre_init(44100, -16, 2, 512) # Pre-initialize mixer for better performance
 pygame.init() # Moved init here to use fonts globally
 SCREEN_WIDTH, SCREEN_HEIGHT = 630, 710  # Maze (630) + 2 Buttons (80)
 CELL_SIZE = 30
@@ -42,7 +43,24 @@ except FileNotFoundError:
     player_sprite_image = pygame.Surface((CELL_SIZE-4, CELL_SIZE-4))
     player_sprite_image.fill(GREEN)
     finish_sprite = pygame.Surface((CELL_SIZE-4, CELL_SIZE-4))
-    finish_sprite.fill(RED)
+    finish_sprite.fill((255, 0, 0)) # Red
+
+# --- Sounds ---
+class DummySound:
+    def play(self): pass
+
+# NOTE: Pygame works best with .wav or .ogg files.
+try:
+    WIN_SOUND_PATH = "win.wav"  # Sound for reaching the star
+    win_sound = pygame.mixer.Sound(WIN_SOUND_PATH)
+except (pygame.error, FileNotFoundError):
+    win_sound = DummySound()
+
+try:
+    MOVE_SOUND_PATH = "move.wav" # Sound for player movement
+    move_sound = pygame.mixer.Sound(MOVE_SOUND_PATH)
+except (pygame.error, FileNotFoundError):
+    move_sound = DummySound()
 
 
 finish_sprite = pygame.transform.scale(finish_sprite, (CELL_SIZE-4, CELL_SIZE-4))
@@ -180,6 +198,8 @@ class Player(pygame.sprite.Sprite):
         new_row = self.row + dr
         new_col = self.col + dc
         if 0 <= new_row < HEIGHT and 0 <= new_col < WIDTH and maze[new_row][new_col] != "#":
+            # Play move sound on successful move
+            move_sound.play()
             self.row = new_row
             self.col = new_col
             self.target_x = self.col*CELL_SIZE + 2
@@ -254,6 +274,7 @@ async def main():
         # Win condition
         if (player.row, player.col) == finish_pos:
             score += 1
+            win_sound.play() # Play the sound when the player wins
             player, finish_pos = reset_game()
             show_solution = False
             a_star_path = None
@@ -276,3 +297,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
