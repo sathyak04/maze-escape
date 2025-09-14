@@ -1,4 +1,4 @@
-# Maze Escape 🎮
+# The MushROOMS 🎮
 
 A procedurally generated **maze game** built with Pygame.  
 Players navigate a dynamic maze, avoiding walls and racing to reach the finish.  
